@@ -38,12 +38,12 @@ public class Composer {
 	static int MAX = 10;
 	
 
-	public static void main(String[] args) throws IOException {
+	/*public static void main(String[] args) throws IOException {
 		String input  = "In this Map example, we will learn how to check if HashMap is empty in Java. There are two ways to find out if Map is empty, one is using size() method, if size is zero means Map is empty. Another way to check if HashMap is empty is using more readable isEmpty() method which returns true if Map is empty. Here is code example:";
 	    //String input = "This is ! ? good.";
 		new Composer(input,4,4);
 		
-	}
+	}*/
 
 
 	Composer(String input, int first, int second) throws IOException {
