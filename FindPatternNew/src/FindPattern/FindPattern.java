@@ -22,23 +22,23 @@ public class FindPattern {
 	private static String newSinglePatternPath = "/Users/jenny/Desktop/newSinglePatternRecord/";
 	private static File[] listOfFiles; 
 	private static String filename;  //the file that currently dealing with
-	private static HashMap<Integer, HashSet<SequencePair> > allPatternOne; //[key patternSize : value pattern
-	private static HashMap<Integer, HashSet<SequencePair> > allPatternTwo;
+	public  static HashMap<Integer, HashSet<SequencePair> > allPatternOne; //[key patternSize : value pattern
+	public  static HashMap<Integer, HashSet<SequencePair> > allPatternTwo;
 	private static HashMap<SequencePair, Integer> countOne;
 	private static HashMap<SequencePair, Integer> countTwo;
 	private static HashMap<SequencePair,Integer> hashOne; //current generated patterns for a file of size n pattern;
     private static HashMap<SequencePair,Integer> hashTwo; //current generated patterns for a file of size n pattern;
 	private static ArrayList<Integer> lrcSeq;//lrc sequence for current file
 	private static ArrayList<Integer> meloSeq;//melo sequence for current file 
-	private static ArrayList<Double> durSeq;//duration sequence for current file
+	private static ArrayList<Integer> durSeq;//duration sequence for current file
 	
 	
 	static int MIN = 2;
-	static int MAX = 20;
+	static int MAX = 10;
 	//static int threshold = 2;
 	
-	public static void main(String[] arsg) throws IOException {
-		
+	public FindPattern() throws IOException {
+		System.out.println("constructor of FindPattern");
 		allPatternOne = new HashMap<Integer, HashSet<SequencePair> >();
 		allPatternTwo = new HashMap<Integer, HashSet<SequencePair> >();
 		countOne = new HashMap<SequencePair, Integer>();
@@ -78,7 +78,7 @@ public class FindPattern {
 		
 		
 		
-		for(int i = 0; i < listOfFiles.length;++i) {
+		for(int i = 1 ; i < listOfFiles.length;++i) {
 			filename = listOfFiles[i].getName();
 			System.out.println(filename);
 			if(filename.equals(".DS_Store")) continue;
@@ -179,7 +179,18 @@ public class FindPattern {
 			}
 				
 		}
+		
+		
 		countOne = countOnetemp;
+		
+		/*System.out.println("dddd: " + hashOne.size() + " " + mostPattern.size());
+		iter = countOne.entrySet().iterator();
+		while(iter.hasNext()) {
+			Map.Entry entry = (Entry) iter.next();
+			SequencePair key =  (SequencePair) entry.getKey();
+			Integer value = (Integer) entry.getValue();
+			System.out.println(key.firstSeq+":" +value);
+		}*/
 		
         HashMap<ArrayList<Integer>, Integer> mostPatternTwo = new HashMap<ArrayList<Integer>, Integer>();
 		
@@ -192,6 +203,7 @@ public class FindPattern {
 			if(mostPatternTwo.containsKey(key.firstSeq)) {
 				if(mostPatternTwo.get(key.firstSeq) < value) {
 					mostPatternTwo.put(key.firstSeq, value);
+					//System.out.println("replace take place");
 				}
 			}
 			else 
@@ -256,6 +268,11 @@ public class FindPattern {
 		    Integer value = (Integer)entry.getKey();
 		    HashSet<SequencePair> set = (HashSet<SequencePair>) entry.getValue();
 		    count += set.size();
+		    Iterator itr = set.iterator();
+		    while(itr.hasNext()) {
+		    	SequencePair current = (SequencePair) itr.next();
+		    	 System.out.println("[" + current.firstSeq +":"+ current.secondSeq +"]");
+		    }
 		}
 		System.out.println("result"+ count);*/
 		
@@ -274,14 +291,14 @@ public class FindPattern {
         Scanner s = new Scanner(new BufferedReader(new FileReader(inputPath + filename)));
 		lrcSeq = new ArrayList<Integer>();
 		meloSeq = new ArrayList<Integer>();
-		durSeq = new ArrayList<Double>();
+		durSeq = new ArrayList<Integer>();
 		
 		String line = null;
 		int wordStress;
 		int pitch;
 		int melStress;
 		int stress;
-		double duration;
+		int duration;
 		
 		while(s.hasNextLine()) {
 			line = s.nextLine();
@@ -290,15 +307,15 @@ public class FindPattern {
 			wordStress = Integer.parseInt(temp[1]);
 			pitch = Integer.parseInt(temp[2]);
 			melStress = Integer.parseInt(temp[3]);
-			duration = Double.parseDouble(temp[4]);
+			duration = Integer.parseInt(temp[4]);
 			
 
 			//combine word level stress and sentence level stress
-			//stress = wordStress * 3 + melStress;
+			stress = wordStress * 3 + melStress;
 			/*if(stress < 0 || stress > 9) {
 				System.out.println("Stress range error");
 			}*/
-			lrcSeq.add(wordStress);
+			lrcSeq.add(stress);
 			meloSeq.add(pitch);
 			durSeq.add(duration);
 		}
@@ -307,7 +324,10 @@ public class FindPattern {
 		for(int i = 0;i < lrcSeq.size() -1;++i) {
 			lrcSeq.set(i, lrcSeq.get(i+1)-lrcSeq.get(i));
 			meloSeq.set(i, meloSeq.get(i+1) - meloSeq.get(i));
-			durSeq.set(i, durSeq.get(i+1) / durSeq.get(i));
+			if(durSeq.get(i+1) / durSeq.get(i)>=1)
+				durSeq.set(i, durSeq.get(i+1) / durSeq.get(i));
+			else 
+				durSeq.set(i,durSeq.get(i) / durSeq.get(i+1) * (-1));
 		}
 		lrcSeq.remove(lrcSeq.size()-1);
 		meloSeq.remove(meloSeq.size()-1);
@@ -322,7 +342,7 @@ public class FindPattern {
 		BufferedWriter out;
 		Iterator entries = allPatternOne.entrySet().iterator();
 		
-		 out = new BufferedWriter(new FileWriter(singlePatternPath+"allPatternOneMore.txt"));
+		 out = new BufferedWriter(new FileWriter(singlePatternPath+"allPatternOne.txt"));
 		    int count1 = 0;
 		    entries = allPatternOne.entrySet().iterator();
 			while (entries.hasNext()) {
@@ -334,6 +354,7 @@ public class FindPattern {
 			    Iterator itr = set.iterator();
 			    while(itr.hasNext()) {
 			    	SequencePair current = (SequencePair) itr.next();
+			    	//System.out.println("[" + current.firstSeq +":"+current.secondSeq +"]");
 			        out.write("[" + current.firstSeq +":"+current.secondSeq +"]"+"\n");
 			    }
 			}
@@ -345,7 +366,7 @@ public class FindPattern {
 	
 		
 		
-	    out = new BufferedWriter(new FileWriter(newSinglePatternPath+"allPatternTwoMore.txt"));
+	    out = new BufferedWriter(new FileWriter(newSinglePatternPath+"allPatternTwo.txt"));
 	    int count2 = 0;
 	    entries = allPatternTwo.entrySet().iterator();
 		while (entries.hasNext()) {
@@ -357,6 +378,7 @@ public class FindPattern {
 		    Iterator itr = set.iterator();
 		    while(itr.hasNext()) {
 		    	SequencePair current = (SequencePair) itr.next();
+		    	
 		        out.write("[" + current.firstSeq +":"+current.secondSeq +"]"+"\n");
 		    }
 		}
@@ -380,14 +402,14 @@ public class FindPattern {
 		hashTwo = new HashMap<SequencePair,Integer>();
 		ArrayList<Integer> first;
 		ArrayList<Integer> second;
-		ArrayList<Double> third;
+		ArrayList<Integer> third;
 		
 		//System.out.println(lrcSeq.size());
 		
 		for(int i = 0; i < lrcSeq.size() - size ;++i) {
 			first = new ArrayList<Integer>();
 			second = new ArrayList<Integer>();
-			third = new ArrayList<Double>();
+			third = new ArrayList<Integer>();
 			
 			for(int j = i; j < i+ size ;++j) {
 				first.add(lrcSeq.get(j));
