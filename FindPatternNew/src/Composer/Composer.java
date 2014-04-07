@@ -1,11 +1,21 @@
 package Composer;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+
+import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MetaMessage;
+import javax.sound.midi.MidiEvent;
+import javax.sound.midi.MidiSystem;
+import javax.sound.midi.Sequence;
+import javax.sound.midi.ShortMessage;
+import javax.sound.midi.SysexMessage;
+import javax.sound.midi.Track;
 
 import jdbm.RecordManager;
 import jdbm.RecordManagerFactory;
@@ -22,6 +32,7 @@ public class Composer {
 	static ArrayList <Map<ArrayList<Integer>, ArrayList<Integer> > > patternPoolsTwo; 
 	static ArrayList <Map<ArrayList<Integer>, ArrayList<Integer> > > patternPools; 
 	static ArrayList <Map<ArrayList<Integer>, ArrayList<Integer> > > patternPoolsDuration; 
+	static int resolution = 480;
 
 
 	private static String str;
@@ -38,12 +49,25 @@ public class Composer {
 	static int MAX = 10;
 	
 
-	/*public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InvalidMidiDataException {
+		
 		String input  = "In this Map example, we will learn how to check if HashMap is empty in Java. There are two ways to find out if Map is empty, one is using size() method, if size is zero means Map is empty. Another way to check if HashMap is empty is using more readable isEmpty() method which returns true if Map is empty. Here is code example:";
 	    //String input = "This is ! ? good.";
+		//input = "Close your eyes and roll a dice Under the board there's a compromise If after all we only lived twice Which lies the run road to paradise Don't say a word, here comes the break of the day And wide clouds of sand raised by the wind of the end of May Close your eyes and make a betFace to the glare of the sunset";
 		new Composer(input,4,4);
 		
-	}*/
+		//test
+	    //Sequence sequence = MidiSystem.getSequence(new File("/Users/jzhaoaf/Desktop/2_hearts.mid"));
+		Sequence sequence = generateSequence(melo);
+	    //System.out.println(sequence.getResolution());  //Resolution is 480
+				
+	    //play the generate sequence
+	    MidiPlayer myPlayer = new MidiPlayer();
+	    myPlayer.play(sequence, false);
+	    /*if(myPlayer!=null) 
+	    	myPlayer.stop();*/
+		
+	}
 
 
 	Composer(String input, int first, int second) throws IOException {
@@ -319,6 +343,102 @@ public class Composer {
 	       System.out.println(jasonResult);
 	       
 		
+	}
+	
+	
+	private static Sequence generateSequence(ArrayList<Integer> array) throws InvalidMidiDataException, IOException {
+		// TODO Auto-generated method stub
+		Sequence sequence = new Sequence(Sequence.PPQ, resolution);
+		Track t = sequence.createTrack();
+		
+		//Turn on General MIDI sound set
+		byte[] b = {(byte)0xF0, 0x7E, 0x7F, 0x09, 0x01, (byte)0xF7};
+		SysexMessage sm = new SysexMessage();
+		sm.setMessage(b, 6);
+		MidiEvent me = new MidiEvent(sm,(long)0);
+		t.add(me);
+		
+		//set tempo
+		MetaMessage mt = new MetaMessage();
+        byte[] bt = {0x02, (byte)0x00, 0x00};
+		mt.setMessage(0x51 ,bt, 3);
+		me = new MidiEvent(mt,(long)0);
+		t.add(me);
+		
+		//set trackname
+		mt = new MetaMessage();
+		String TrackName = new String("midifile track");
+		mt.setMessage(0x03 ,TrackName.getBytes(), TrackName.length());
+		me = new MidiEvent(mt,(long)0);
+		t.add(me);
+		
+		//set omni on
+		ShortMessage mm = new ShortMessage();
+		mm.setMessage(0xB0, 0x7D,0x00);
+		me = new MidiEvent(mm,(long)0);
+		t.add(me);
+		
+		//set ploy on
+		mm = new ShortMessage();
+		mm.setMessage(0xB0, 0x7F,0x00);
+		me = new MidiEvent(mm,(long)0);
+		t.add(me);
+		
+		//set Instrument to Piano
+		mm = new ShortMessage();
+		mm.setMessage(0xC0, 0x00, 0x00);
+		me = new MidiEvent(mm,(long)0);
+		t.add(me);
+		
+		//middle part
+		int pitch = 0x3C;  //start with middle C
+		int start = 0;
+		for(int i = 0; i < array.size(); ++i) {
+			
+			//System.out.println("get into here" + i);
+			//note on
+			mm = new ShortMessage();
+			pitch += array.get(i); 
+			mm.setMessage(0x90 ,pitch + melo.get(start), 0x60);
+			//System.out.println(pitch);
+			//System.out.println(pitch + beatArray.get(start));
+			start = (1+ start) % Integer.parseInt(beatSecond);
+			me = new MidiEvent(mm,(long) (i) * 1000);
+			t.add(me);
+			///note off
+			mm = new ShortMessage();
+			mm.setMessage(0x80 ,pitch + melo.get(start) , 0x40);
+			start = (1+ start) % Integer.parseInt(beatSecond);
+			me = new MidiEvent(mm,(long) (i+0.5) * 1000);
+			t.add(me);
+			
+			//test using middle C
+			/*mm = new ShortMessage();
+			mm.setMessage(0x90,0x3C,0x60);
+			me = new MidiEvent(mm,(long)1);
+			t.add(me);
+			
+			mm = new ShortMessage();
+			mm.setMessage(0x80,0x3C,0x40);
+			me = new MidiEvent(mm,(long)121);
+			t.add(me);*/
+			
+			
+			
+		}
+		
+		
+		//set end of track
+		mt = new MetaMessage();
+        byte[] bet = {}; // empty array
+		mt.setMessage(0x2F,bet,0);
+		me = new MidiEvent(mt, (long)140);
+		t.add(me);
+		
+		//write the MIDI sequence to a MIDI file
+		File f = new File("/Users/jenny/Desktop/generatedFile.mid");
+		MidiSystem.write(sequence,1,f);
+		return sequence;
 	}
 	
 	
