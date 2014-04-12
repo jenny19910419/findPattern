@@ -22,12 +22,15 @@ public class FindPattern {
 	private static String newSinglePatternPath = "/Users/jenny/Desktop/newSinglePatternRecord/";
 	private static File[] listOfFiles; 
 	private static String filename;  //the file that currently dealing with
-	public  static HashMap<Integer, HashSet<SequencePair> > allPatternOne; //[key patternSize : value pattern
+	public  static HashMap<Integer, HashSet<SequencePair> > allPatternOne; //[key patternSize : value pattern]
 	public  static HashMap<Integer, HashSet<SequencePair> > allPatternTwo;
-	private static HashMap<SequencePair, Integer> countOne;
-	private static HashMap<SequencePair, Integer> countTwo;
+	private static HashMap<SequencePair, Integer> AllcountOne;//all the patterns for one file
+	private static HashMap<SequencePair, Integer> AllcountTwo;//all the patterns for one file
+	private static HashMap<SequencePair, Integer> countOne;//all the patterns for one file
+	private static HashMap<SequencePair, Integer> countTwo;//all the patterns for one file
 	private static HashMap<SequencePair,Integer> hashOne; //current generated patterns for a file of size n pattern;
     private static HashMap<SequencePair,Integer> hashTwo; //current generated patterns for a file of size n pattern;
+    
 	private static ArrayList<Integer> lrcSeq;//lrc sequence for current file
 	private static ArrayList<Integer> meloSeq;//melo sequence for current file 
 	private static ArrayList<Integer> durSeq;//duration sequence for current file
@@ -35,28 +38,20 @@ public class FindPattern {
 	
 	static int MIN = 2;
 	static int MAX = 10;
-	//static int threshold = 2;
+	static int threshold = 1;
+	static int allThreshold = 10;
 	
-	public FindPattern() throws IOException {
-		System.out.println("constructor of FindPattern");
+	public static void main(String[] args) throws IOException {
+		//System.out.println("constructor of FindPattern");
 		allPatternOne = new HashMap<Integer, HashSet<SequencePair> >();
 		allPatternTwo = new HashMap<Integer, HashSet<SequencePair> >();
-		countOne = new HashMap<SequencePair, Integer>();
-		countTwo = new HashMap<SequencePair, Integer>();
+		
+		
+		AllcountOne = new HashMap<SequencePair, Integer>();
+		AllcountTwo = new HashMap<SequencePair, Integer>();
 		
 		File folder = new File(inputPath);
 		listOfFiles = folder.listFiles();
-		
-		/*for(int i = 0; i < listOfFiles.length;++i) {
-			if(listOfFiles[i].getName().equals(".DS_Store")) continue;
-			System.out.println(listOfFiles[i].getName());
-		}*/
-		
-		/*for(int i = 0; i < listOfFiles.length;++i) {
-			filename = listOfFiles[i].getName();
-			if(filename.equals(".DS_Store")) continue;
-			
-		}*/
 		
 		
 		//initialize allPattern
@@ -64,17 +59,6 @@ public class FindPattern {
 			allPatternOne.put(new Integer(i), new HashSet<SequencePair>());
 			allPatternTwo.put(new Integer(i), new HashSet<SequencePair>());
 		}
-
-		
-		
-		//test
-		/*filename = "50_cent-in_da_club.txt";
-		generateSequence();
-		for(int i = 0; i < lrcSeq.size();++i) {
-			System.out.println(lrcSeq.get(i) + ":" + meloSeq.get(i) + ":" + durSeq.get(i));
-		}
-		getPatterns(3);*/
-	
 		
 		
 		
@@ -83,15 +67,19 @@ public class FindPattern {
 			System.out.println(filename);
 			if(filename.equals(".DS_Store")) continue;
 			
+			//BufferedWriter out = new BufferedWriter(new FileWriter(singlePatternPath+ filename+ ".txt"));
 
-			int temp = countOne.size();
+
+			countOne = new HashMap<SequencePair, Integer>();
+			countTwo = new HashMap<SequencePair, Integer>();
 			
 			for(int j =MIN; j <= MAX; ++j) {
 				
+				
 				//generate current hashOne and hashTwo
 				generateSequence();
-				getPatterns(j);
-				//System.out.println("size " + j + " " + hashOne.size());
+				getPatterns(j);//generate hashOne and hashTwo for this size
+
 				
 
 				Iterator iter = hashOne.entrySet().iterator();
@@ -118,172 +106,71 @@ public class FindPattern {
 					}
 					else countTwo.put(key, value);
 				}
+				//choose patterns which appears at least three times
+				HashMap<SequencePair, Integer>  countOnetemp = new HashMap<SequencePair, Integer>();
+				iter = countOne.entrySet().iterator();
+				while(iter.hasNext()) {
+					Map.Entry entry = (Entry) iter.next();
+					SequencePair key = (SequencePair) entry.getKey();
+					Integer value = (Integer) entry.getValue();
+					if(value > threshold) {
+						countOnetemp.put(key, value);
+						if(AllcountOne.containsKey(key)) {
+							AllcountOne.put(key, AllcountOne.get(key)+1);
+						}
+						else AllcountOne.put(key,1);
+					}
+						
+				}
+				countOne = countOnetemp;
 				
-				
+				HashMap<SequencePair, Integer>  countTwotemp = new HashMap<SequencePair, Integer>();
+				iter = countTwo.entrySet().iterator();
+				while(iter.hasNext()) {
+					Map.Entry entry = (Entry) iter.next();
+					SequencePair key = (SequencePair) entry.getKey();
+					Integer value = (Integer) entry.getValue();
+					if(value > threshold) {
+						countOnetemp.put(key, value);
+						if(AllcountTwo.containsKey(key)) {
+							AllcountTwo.put(key, AllcountTwo.get(key)+1);
+						}
+						else AllcountTwo.put(key,1);
+					}
+						
+				}
+				countTwo = countOnetemp;
 			}
-			temp = countOne.size()-temp;
-			//System.out.println("add patterns" +  temp);
 			
-			//log 
+			//log for this file
 			generateForSingleFile();
+			
 		}
 		
-		/*System.out.println("Count one size:  " + countOne.size());//792
-		Iterator itr = countOne.entrySet().iterator();
-		while(itr.hasNext()) {
-			 Map.Entry entry = (Map.Entry) itr.next();
-			 SequencePair key = (SequencePair)entry.getKey();
-			 Integer value = (Integer)entry.getValue();
-			 System.out.println("[" + key.firstSeq +":"+key.secondSeq +"]" + " ;  "+ value);
-		}
-		System.out.println(countOne.size());*/
-		
-		//if given one sequence of lrc, choose the melo sequence that appears the most time
-		HashMap<ArrayList<Integer>, Integer> mostPattern = new HashMap<ArrayList<Integer>, Integer>();
-		
-		Iterator iter = countOne.entrySet().iterator();
+		Iterator iter = AllcountOne.entrySet().iterator();
 		while(iter.hasNext()) {
 			Map.Entry entry = (Entry) iter.next();
 			Integer value = (Integer) entry.getValue();
 			SequencePair key = (SequencePair) entry.getKey();//System.out.println("current" + "[" + key.firstSeq +":"+key.secondSeq +"]" + " ;  "+ value);
 			
-			if(mostPattern.containsKey(key.firstSeq)) {
-				if(mostPattern.get(key.firstSeq) < value) {
-					mostPattern.put(key.firstSeq, value);
-				}
+			if(value > allThreshold) {
+				allPatternOne.get(key.firstSeq.size()).add(key);
 			}
-			else 
-				mostPattern.put(key.firstSeq, value);
+		
 		}
 		
-		//TEST
-		/*System.out.println("dddd: " + hashOne.size() + " " + mostPattern.size());
-		iter = mostPattern.entrySet().iterator();
-		while(iter.hasNext()) {
-			Map.Entry entry = (Entry) iter.next();
-			ArrayList<Integer> key = (ArrayList<Integer>) entry.getKey();
-			Integer value = (Integer) entry.getValue();
-			System.out.println(key+":" +value);
-		}*/
-		
-		
-		HashMap<SequencePair, Integer>  countOnetemp = new HashMap<SequencePair, Integer>();
-		iter = countOne.entrySet().iterator();
-		while(iter.hasNext()) {
-			Map.Entry entry = (Entry) iter.next();
-			SequencePair key = (SequencePair) entry.getKey();
-			Integer value = (Integer) entry.getValue();
-			if(value == mostPattern.get(key.firstSeq)) {
-				countOnetemp.put(key, value);
-				//System.out.println("current" + "[" + key.firstSeq +":"+key.secondSeq +"]" + " ;  "+ value);
-			}
-				
-		}
-		
-		
-		countOne = countOnetemp;
-		
-		/*System.out.println("dddd: " + hashOne.size() + " " + mostPattern.size());
-		iter = countOne.entrySet().iterator();
-		while(iter.hasNext()) {
-			Map.Entry entry = (Entry) iter.next();
-			SequencePair key =  (SequencePair) entry.getKey();
-			Integer value = (Integer) entry.getValue();
-			System.out.println(key.firstSeq+":" +value);
-		}*/
-		
-        HashMap<ArrayList<Integer>, Integer> mostPatternTwo = new HashMap<ArrayList<Integer>, Integer>();
-		
-		iter = countTwo.entrySet().iterator();
+		iter = AllcountTwo.entrySet().iterator();
 		while(iter.hasNext()) {
 			Map.Entry entry = (Entry) iter.next();
 			Integer value = (Integer) entry.getValue();
 			SequencePair key = (SequencePair) entry.getKey();//System.out.println("current" + "[" + key.firstSeq +":"+key.secondSeq +"]" + " ;  "+ value);
 			
-			if(mostPatternTwo.containsKey(key.firstSeq)) {
-				if(mostPatternTwo.get(key.firstSeq) < value) {
-					mostPatternTwo.put(key.firstSeq, value);
-					//System.out.println("replace take place");
-				}
+			if(value > allThreshold) {
+				allPatternTwo.get(key.firstSeq.size()).add(key);
 			}
-			else 
-				mostPatternTwo.put(key.firstSeq, value);
+		
 		}
-		
-		HashMap<SequencePair, Integer>  countTwotemp = new HashMap<SequencePair, Integer>();
-		iter = countTwo.entrySet().iterator();
-		while(iter.hasNext()) {
-			Map.Entry entry = (Entry) iter.next();
-			SequencePair key = (SequencePair) entry.getKey();
-			Integer value = (Integer) entry.getValue();
-			if(value == mostPattern.get(key.firstSeq))
-				countTwotemp.put(key, value);
-		}
-		countTwo = countTwotemp;
-		
-		
-		
-		
-		//overall data
-		int sum1 = 0;
-		int sum2 = 0;
-		Iterator entries = countOne.entrySet().iterator();
-		while (entries.hasNext()) {
-		    Map.Entry entry = (Map.Entry) entries.next();
-		    SequencePair key = (SequencePair)entry.getKey();
-		    Integer value = (Integer)entry.getValue();
-		    //System.out.println("Key = " + key + ", Value = " + value);
-		    //if(key.firstSeq.size())
-		    sum1++;
-	    	allPatternOne.get(key.firstSeq.size()).add(key);
-		    /*if(value >= threshold) {
-		    	sum1++;
-		    	allPatternOne.get(key.firstSeq.size()).add(key);
-		    }*/
-		}
-		
-		entries = countTwo.entrySet().iterator();
-		while (entries.hasNext()) {
-		    Map.Entry entry = (Map.Entry) entries.next();
-		    SequencePair key = (SequencePair)entry.getKey();
-		    Integer value = (Integer)entry.getValue();
-		    //System.out.println("Key = " + key + ", Value = " + value);
-		    //if(key.firstSeq.size())
-		    sum2++;
-	    	allPatternTwo.get(key.firstSeq.size()).add(key);
-		    /*if(value > threshold) {
-		    	sum2++;
-		    	allPatternTwo.get(key.firstSeq.size()).add(key);
-		    }*/
-		}
-		System.out.println("sum1 " + sum1);
-		System.out.println("sum2 " + sum2);
-		
-		
-		//test 
-		/*int count = 0;
-		entries = allPatternOne.entrySet().iterator();
-		while (entries.hasNext()) {
-		    Map.Entry entry = (Map.Entry) entries.next();
-		    Integer value = (Integer)entry.getKey();
-		    HashSet<SequencePair> set = (HashSet<SequencePair>) entry.getValue();
-		    count += set.size();
-		    Iterator itr = set.iterator();
-		    while(itr.hasNext()) {
-		    	SequencePair current = (SequencePair) itr.next();
-		    	 System.out.println("[" + current.firstSeq +":"+ current.secondSeq +"]");
-		    }
-		}
-		System.out.println("result"+ count);*/
-		
-		//record the all pattern informations in log files
 		LogOverall();
-		
-		
-		
-		
-		
-		
 	}
 
 	private static void generateSequence() throws FileNotFoundException {
@@ -390,9 +277,32 @@ public class FindPattern {
 		
 	}
 
-	private static void generateForSingleFile() {
+	private static void generateForSingleFile() throws IOException {
 		// TODO Auto-generated method stub
+		BufferedWriter out = new BufferedWriter(new FileWriter(singlePatternPath+ filename));
 		
+		Iterator iter = countOne.entrySet().iterator();
+		while(iter.hasNext()) {
+			Map.Entry entry = (Entry) iter.next();
+			Integer value = (Integer) entry.getValue();
+			SequencePair key = (SequencePair) entry.getKey();//System.out.println("current" + "[" + key.firstSeq +":"+key.secondSeq +"]" + " ;  "+ value);
+			out.write("[" + key.firstSeq + ":" + key.secondSeq + "]" +":" +value + "\n");
+		}
+		if(out!=null)
+			out.close();
+		
+		
+		BufferedWriter out1 = new BufferedWriter(new FileWriter(newSinglePatternPath+filename));
+		iter = countTwo.entrySet().iterator();
+		while(iter.hasNext()) {
+			Map.Entry entry = (Entry) iter.next();
+			Integer value = (Integer) entry.getValue();
+			SequencePair key = (SequencePair) entry.getKey();//System.out.println("current" + "[" + key.firstSeq +":"+key.secondSeq +"]" + " ;  "+ value);
+			out1.write("[" + key.firstSeq + ":" + key.secondSeq + "]" +":" +value + "\n");
+		}
+		 
+		if(out1!=null)
+			out1.close();
 	}
 	
 	//given a file, generate all sequence of  size 
@@ -429,21 +339,6 @@ public class FindPattern {
 			hashTwo.put(cur, count+1);
 		
 		}
-		
-		//test
-		/*System.out.println("original" + lrcSeq.size());
-		int count = 0;
-		Iterator itr = hashOne.entrySet().iterator();
-		while(itr.hasNext()) {
-			Map.Entry entry = (Entry) itr.next();
-			Integer value = (Integer) entry.getValue();
-			SequencePair key = (SequencePair) entry.getKey();
-			System.out.println("[" + key.firstSeq +":"+key.secondSeq +"]" + " ;  "+ value);
-			
-			
-			count+=value;
-		}
-		System.out.println("recombine" + count + "hashOne size: " + hashOne.entrySet().size());*/
 	
 	}
 	

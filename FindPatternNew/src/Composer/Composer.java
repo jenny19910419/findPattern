@@ -1,12 +1,16 @@
 package Composer;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Scanner;
+import java.util.Map.Entry;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaMessage;
@@ -26,12 +30,9 @@ import Phonetic.WordStruct;
 
 public class Composer {
 	
-	public  static HashMap<Integer, HashSet<SequencePair> > allPatternOne; //[key patternSize : value pattern
+	public  static HashMap<Integer, HashSet<SequencePair> > allPatternOne; //[key patternSize : value pattern]
 	public  static HashMap<Integer, HashSet<SequencePair> > allPatternTwo;
-	static ArrayList <Map<ArrayList<Integer>, ArrayList<Integer> > > patternPoolsOne; 
-	static ArrayList <Map<ArrayList<Integer>, ArrayList<Integer> > > patternPoolsTwo; 
-	static ArrayList <Map<ArrayList<Integer>, ArrayList<Integer> > > patternPools; 
-	static ArrayList <Map<ArrayList<Integer>, ArrayList<Integer> > > patternPoolsDuration; 
+	//public static HashMap<ArrayList< > >
 	static int resolution = 480;
 
 
@@ -56,16 +57,16 @@ public class Composer {
 		//input = "Close your eyes and roll a dice Under the board there's a compromise If after all we only lived twice Which lies the run road to paradise Don't say a word, here comes the break of the day And wide clouds of sand raised by the wind of the end of May Close your eyes and make a betFace to the glare of the sunset";
 		new Composer(input,4,4);
 		
+		
 		//test
 	    //Sequence sequence = MidiSystem.getSequence(new File("/Users/jzhaoaf/Desktop/2_hearts.mid"));
-		Sequence sequence = generateSequence(melo);
-	    //System.out.println(sequence.getResolution());  //Resolution is 480
-				
+		Sequence sequence = generateSequence(melo,dur);
+	   
 	    //play the generate sequence
 	    MidiPlayer myPlayer = new MidiPlayer();
 	    myPlayer.play(sequence, false);
-	    /*if(myPlayer!=null) 
-	    	myPlayer.stop();*/
+	    myPlayer.stop();
+	
 		
 	}
 
@@ -92,53 +93,18 @@ public class Composer {
 		
 		
 		
-		FindPattern myPattern = new FindPattern();
-		allPatternOne = myPattern.allPatternOne;
-		allPatternTwo = myPattern.allPatternTwo;
+		allPatternOne = new HashMap<Integer, HashSet<SequencePair> >();
+		allPatternTwo = new HashMap<Integer, HashSet<SequencePair> >();
 		
-		//ini patternPool
-		patternPools = new ArrayList <Map<ArrayList<Integer>, ArrayList<Integer> > >();
-		for(int i = 0; i <= MAX;++i) {
-			patternPools.add(new HashMap<ArrayList<Integer>, ArrayList<Integer> >());
-		}
+		for(int i = MIN; i <=MAX; ++i) {
+			allPatternOne.put(new Integer(i), new HashSet<SequencePair>());
+			allPatternTwo.put(new Integer(i), new HashSet<SequencePair>());
+		} 
 		
-		Iterator itr = allPatternOne.entrySet().iterator();
-		while(itr.hasNext()) {
-			
-			 Map.Entry entry = (Map.Entry) itr.next();
-			 Integer value = (Integer) entry.getKey();
-			 HashSet key = (HashSet)entry.getValue();
-			 System.out.println("size: " + value);
-			 Iterator iter2 = key.iterator();
-			 while(iter2.hasNext()) {
-				 SequencePair cur = (SequencePair) iter2.next();
-				 patternPools.get(value).put(cur.firstSeq, cur.secondSeq);
-				 System.out.println(cur.firstSeq + " ? " + cur.secondSeq);
+		readInPatterns("/Users/jenny/Desktop/singlePatternRecord/allPatternOne.txt",true);
+		readInPatterns("/Users/jenny/Desktop/newSinglePatternRecord/allPatternTwo.txt",false);
 
-			 }
-		}
 		
-		patternPoolsDuration = new ArrayList <Map<ArrayList<Integer>, ArrayList<Integer> > >();
-		for(int i = 0; i <= MAX;++i) {
-			patternPoolsDuration.add(new HashMap<ArrayList<Integer>, ArrayList<Integer> >());
-		}
-		
-		itr = allPatternTwo.entrySet().iterator();
-		while(itr.hasNext()) {
-			
-			 Map.Entry entry = (Map.Entry) itr.next();
-			 Integer value = (Integer) entry.getKey();
-			 HashSet key = (HashSet)entry.getValue();
-			 System.out.println("size: " + value);
-			 Iterator iter2 = key.iterator();
-			 while(iter2.hasNext()) {
-				 SequencePair cur = (SequencePair) iter2.next();
-				 patternPoolsDuration.get(value).put(cur.firstSeq, cur.secondSeq);
-				 System.out.println(cur.firstSeq + " & " + cur.secondSeq);
-
-			 }
-		}
-
 		
 		
 		lrc = parseLrc();
@@ -172,44 +138,57 @@ public class Composer {
 				ArrayList<Integer> searchResult = new ArrayList<Integer>();
 				
 				ArrayList<Integer> current = new ArrayList<Integer>();
+				
 				for(int j = startPos; j < startPos + i && j < lrc.size(); ++j) {
 					current.add(lrc.get(j));	
 				}
-				
-				if(patternPools.get(i).get(current)!=null) {
-					successLen+=i;
-					searchResult = patternPools.get(i).get(current);
-					startPos+=i;
-					find = true;
-					melo.addAll(searchResult);
-					break;
+				HashSet<SequencePair> currentSet = allPatternOne.get(i);//get the set
+				Iterator iter = currentSet.iterator();
+				while(iter.hasNext()) {
+					SequencePair key = (SequencePair) iter.next();
+					if(ArrayContentCompare(current, key.firstSeq)) {
+						find = true;
+						searchResult = key.secondSeq;
+						successLen+=i;
+						startPos+=i;
+						melo.addAll(searchResult);
+						break;
+					}
+					
 				}
-				else {
-					System.out.println("can not find for size "+ i);
+				
+				if(!find) {
+					//System.out.println("can not find for size "+ i);
 				}
 					
 			}
-			if(find == false) {
-				System.out.println("cannnot find for any size");
+			//cannot find for at least length two
+			if(!find) {
+				//System.out.println("cannnot find for any size");
 				startPos++;
 				melo.add(new Integer(0));
 			}
 			
 		}
 		
+		//deal with the end 
 		while(startPos!= lrc.size()) {
 			melo.add(new Integer(0));
 			startPos++;
 		}
+		
 		System.out.println("lrc size" + lrc.size());
 		System.out.println("melo size" + melo.size());
+		System.out.println("lrc array is " + lrc);
 		System.out.println("melo array is " + melo);
+		
 		System.out.println("success length" + successLen);
 		
 		
 		//generate duration according to melo
 		successLen = 0;
 		startPos = 0;
+		
 		while(startPos < melo.size() - MIN) {
 			boolean find = false;
 			
@@ -217,44 +196,70 @@ public class Composer {
 				ArrayList<Integer> searchResult = new ArrayList<Integer>();
 				
 				ArrayList<Integer> current = new ArrayList<Integer>();
+				
 				for(int j = startPos; j < startPos + i && j < melo.size(); ++j) {
 					current.add(melo.get(j));	
 				}
-				
-				if(patternPoolsDuration.get(i).get(current)!=null) {
-					searchResult = patternPoolsDuration.get(i).get(current);
-					startPos+=i;
-					find = true;
-					successLen+=i;
-					dur.addAll(searchResult);
-					break;
+				HashSet<SequencePair> currentSet = allPatternTwo.get(i);//get the set
+				Iterator iter = currentSet.iterator();
+				while(iter.hasNext()) {
+					SequencePair key = (SequencePair) iter.next();
+					if(ArrayContentCompare(current, key.firstSeq)) {
+						find = true;
+						searchResult = key.secondSeq;
+						successLen+=i;
+						startPos+=i;
+						dur.addAll(searchResult);
+						break;
+					}
+					
 				}
-				else {
-					System.out.println("can not find for size "+ i);
+				
+				if(!find) {
+					//System.out.println("can not find for size "+ i);
 				}
 					
 			}
-			if(find == false) {
-				System.out.println("cannnot find for any size");
+			//cannot find for at least length two
+			if(!find) {
+				//System.out.println("cannnot find for any size");
 				startPos++;
-				dur.add(new Integer(0));
+				dur.add(new Integer(1));
 			}
 			
 		}
-		while(startPos!=melo.size()) {
+		
+		//deal with the end 
+		while(startPos!= lrc.size()) {
 			dur.add(new Integer(1));
 			startPos++;
 		}
+		
 		System.out.println("melo size" + melo.size());
 		System.out.println("dur size" + dur.size());
+		System.out.println("melo array is " + melo);
 		System.out.println("dur array is " + dur);
 		System.out.println("success length" + successLen);
-		getJason();
+		//getJason();
 		
 		
 	}
 	
 	
+	private boolean ArrayContentCompare(ArrayList<Integer> first,
+			ArrayList<Integer> second) {
+		// TODO Auto-generated method stub
+		if(first==null || second == null) return false;
+		if(first.size() != second.size())  return false;
+		for(int i = 0; i < first.size();++i) {
+			if(first.get(i)!=second.get(i)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+
 	private boolean checkArray(ArrayList<Integer> first, ArrayList<Integer> second) {
 		// TODO Auto-generated method stub
 		if(first.size() != second.size())		return false;
@@ -346,7 +351,7 @@ public class Composer {
 	}
 	
 	
-	private static Sequence generateSequence(ArrayList<Integer> array) throws InvalidMidiDataException, IOException {
+	private static Sequence generateSequence(ArrayList<Integer> melo,ArrayList<Integer> dur) throws InvalidMidiDataException, IOException {
 		// TODO Auto-generated method stub
 		Sequence sequence = new Sequence(Sequence.PPQ, resolution);
 		Track t = sequence.createTrack();
@@ -393,12 +398,12 @@ public class Composer {
 		//middle part
 		int pitch = 0x3C;  //start with middle C
 		int start = 0;
-		for(int i = 0; i < array.size(); ++i) {
+		for(int i = 0; i < melo.size(); ++i) {
 			
 			//System.out.println("get into here" + i);
 			//note on
 			mm = new ShortMessage();
-			pitch += array.get(i); 
+			pitch += melo.get(i); 
 			mm.setMessage(0x90 ,pitch + melo.get(start), 0x60);
 			//System.out.println(pitch);
 			//System.out.println(pitch + beatArray.get(start));
@@ -441,6 +446,72 @@ public class Composer {
 		return sequence;
 	}
 	
+	private static void readInPatterns(String filename,boolean LRC) throws FileNotFoundException {
+		// TODO Auto-generated method stub
+		Scanner s = new Scanner(new File(filename));
+		String line;
+		ArrayList<Integer> lrc = new ArrayList<Integer>();
+		ArrayList<Integer> melo = new ArrayList<Integer>();
+		
+		
+		int size  = - 1;
+
+
+		int count = 0;
+
+		while(s.hasNextLine()) {
+			line  = s.nextLine();
+			
+			lrc = new ArrayList<Integer>();
+			melo = new ArrayList<Integer>();
+			if(line.contains("total")) break;
+			if(line.charAt(0)=='!') {
+				int pos = line.indexOf(" ");
+				int pos1 = line.indexOf(" ", pos + 1);
+				size = Integer.parseInt(line.substring(pos+1, pos1));
+				System.out.println("test size: " + size);
+				
+			}
+			else {
+				line = line.substring(1,line.length()-1);
+				int pos =line.indexOf(":");
+				String first = line.substring(1,pos-1);
+				String second = line.substring(pos+2,line.length()-1);
+				//System.out.println("["+ first + "]=[" + second + "]");
+				String[] one = first.split(",");
+				String[] two = second.split(",");
+				for(int i = 0; i < one.length;++i) {
+					one[i] = one[i].trim();
+				    two[i] = two[i].trim();
+					//System.out.print("[" + one[i] + "]");
+					lrc.add(Integer.parseInt(one[i]));
+					melo.add(Integer.parseInt(two[i]));
+				}
+					
+				//System.out.println();
+			}
+			if(LRC) {
+				allPatternOne.get(size).add(new SequencePair(lrc,melo));
+			}
+			else {
+				allPatternTwo.get(size).add(new SequencePair(lrc,melo));
+			}
+		}	
+		if(s!=null) 
+			s.close();
+	}
+	
+	public ArrayList<Integer> getLrc() {
+		return lrc;
+	}
+	
+	public ArrayList<Integer> getMelo() {
+		return melo;
+	}
+	
+	public ArrayList<Integer> getDur() {
+		return dur;
+	}
 	
 	static void beatMap() {
 		beatsMap = new HashMap<String,Integer>();
