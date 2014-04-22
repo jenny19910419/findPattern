@@ -53,6 +53,7 @@ public class Composer {
 	public static void main(String[] args) throws IOException, InvalidMidiDataException {
 		
 		String input  = "In this Map example, we will learn how to check if HashMap is empty in Java. There are two ways to find out if Map is empty, one is using size() method, if size is zero means Map is empty. Another way to check if HashMap is empty is using more readable isEmpty() method which returns true if Map is empty. Here is code example:";
+		input = "this is important important issue";
 	    //String input = "This is ! ? good.";
 		//input = "Close your eyes and roll a dice Under the board there's a compromise If after all we only lived twice Which lies the run road to paradise Don't say a word, here comes the break of the day And wide clouds of sand raised by the wind of the end of May Close your eyes and make a betFace to the glare of the sunset";
 		new Composer(input,4,4);
@@ -63,9 +64,9 @@ public class Composer {
 		Sequence sequence = generateSequence(melo,dur);
 	   
 	    //play the generate sequence
-	    MidiPlayer myPlayer = new MidiPlayer();
-	    myPlayer.play(sequence, false);
-	    myPlayer.stop();
+	    //MidiPlayer myPlayer = new MidiPlayer();
+	    //myPlayer.play(sequence, false);
+	    //myPlayer.stop();
 	
 		
 	}
@@ -108,7 +109,7 @@ public class Composer {
 		
 		
 		lrc = parseLrc();
-		//System.out.println(lrc);
+		System.out.println("before handling lrc" + lrc);
 		//generate Relative Array
 		for(int i = 0; i < lrc.size() -1 ;++i) {
 			if(lrc.get(i+1) == 99) 
@@ -126,7 +127,7 @@ public class Composer {
 		}
 		
 		
-		System.out.println(lrc);
+		System.out.println("after handling lrc" + lrc);
 		
 		//generate melo array
 		int successLen = 0;
@@ -149,22 +150,26 @@ public class Composer {
 					if(ArrayContentCompare(current, key.firstSeq)) {
 						find = true;
 						searchResult = key.secondSeq;
+						
+						System.out.println("find patterns " + searchResult);
+	
 						successLen+=i;
 						startPos+=i;
 						melo.addAll(searchResult);
+						
 						break;
 					}
 					
 				}
 				
 				if(!find) {
-					//System.out.println("can not find for size "+ i);
+					System.out.println("can not find for size "+ i);
 				}
 					
 			}
 			//cannot find for at least length two
 			if(!find) {
-				//System.out.println("cannnot find for any size");
+				System.out.println("find for any size");
 				startPos++;
 				melo.add(new Integer(0));
 			}
@@ -172,8 +177,9 @@ public class Composer {
 		}
 		
 		//deal with the end 
-		while(startPos!= lrc.size()) {
+		while(startPos< lrc.size() && startPos!= lrc.size()) {
 			melo.add(new Integer(0));
+			//System.out.println("deal with the end situation");
 			startPos++;
 		}
 		
@@ -230,7 +236,7 @@ public class Composer {
 		}
 		
 		//deal with the end 
-		while(startPos!= lrc.size()) {
+		while(startPos< lrc.size() && startPos!= lrc.size()) {
 			dur.add(new Integer(1));
 			startPos++;
 		}
