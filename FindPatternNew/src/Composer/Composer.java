@@ -176,7 +176,7 @@ public class Composer {
 			
 		}
 		
-		//deal with the end 
+		//deal with the end ;change here
 		while(startPos< lrc.size() && startPos!= lrc.size()) {
 			melo.add(new Integer(0));
 			//System.out.println("deal with the end situation");
